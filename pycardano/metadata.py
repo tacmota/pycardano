@@ -104,11 +104,7 @@ class AlonzoMetadata(MapCBORSerializable):
     @classmethod
     @limit_primitive_type(CBORTag)
     def from_primitive(cls: Type[AlonzoMetadata], value: CBORTag) -> AlonzoMetadata:
-        if not hasattr(value, "tag"):
-            raise DeserializeException(
-                f"{value} does not match the data schema of AlonzoMetadata."
-            )
-        elif value.tag != cls.TAG:
+        if value.tag != cls.TAG:
             raise DeserializeException(
                 f"Expect CBOR tag: {cls.TAG}, got {value.tag} instead."
             )

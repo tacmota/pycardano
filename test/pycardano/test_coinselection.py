@@ -1,4 +1,5 @@
 from functools import reduce
+from random import random
 from test.pycardano.util import chain_context
 from typing import List
 
@@ -9,6 +10,7 @@ from pycardano.exception import (
     InputUTxODepletedException,
     InsufficientUTxOBalanceException,
     MaxInputCountExceededException,
+    UTxOSelectionException,
 )
 from pycardano.transaction import TransactionInput, TransactionOutput, UTxO, Value
 
@@ -131,6 +133,11 @@ class TestRandomImproveMultiAsset:
     def selector(self):
         return RandomImproveMultiAsset(random_generator=reversed(range(TOTAL_UTXOS)))
 
+    def test_not_utxo_generate(self, chain_context):
+        request = [TransactionOutput.from_primitive([address, [1000000000]])]
+        with pytest.raises(InputUTxODepletedException):
+            self.selector.select([], request, chain_context)
+
     def test_ada_only(self, chain_context):
         request = [TransactionOutput.from_primitive([address, [15000000]])]
 
@@ -163,24 +170,48 @@ class TestRandomImproveMultiAsset:
         assert selected == list(reversed(UTXOS[-2:]))
         assert_request_fulfilled(request, selected)
 
-    def test_no_fee_but_respect_min_utxo(self, chain_context):
+    def test_no_fee_but_rand_respect_utxo(self, chain_context):
         request = [TransactionOutput.from_primitive([address, [500000]])]
         # Only the first two UTxOs should be selected in this test case.
         # The first one is for the request amount, the second one is to respect min UTxO size.
         selected, change = RandomImproveMultiAsset(random_generator=[0, 0]).select(
             UTXOS, request, chain_context, include_max_fee=False, respect_min_utxo=True
         )
+
         assert selected == [
             UTXOS[0],
             UTXOS[1],
         ]  # UTXOS[1] is selected to respect min utxo amount
         assert_request_fulfilled(request, selected)
 
-    def test_utxo_depleted(self, chain_context):
-        request = [TransactionOutput.from_primitive([address, [1000000000]])]
+        def test_no_fee_but_respect_min_utxo(self, chain_context):
+            request = [TransactionOutput.from_primitive([address, [500000]])]
+            # Only the first two UTxOs should be selected in this test case.
+            # The first one is for the request amount, the second one is to respect min UTxO size.
+            selected, change = RandomImproveMultiAsset(random_generator=[0, 0]).select(
+                UTXOS,
+                request,
+                chain_context,
+                include_max_fee=False,
+                respect_min_utxo=True,
+            )
+            assert selected == [
+                UTXOS[0],
+                UTXOS[1],
+            ]  # UTXOS[1] is selected to respect min utxo amount
+            assert_request_fulfilled(request, selected)
 
-        with pytest.raises(InputUTxODepletedException):
-            self.selector.select(UTXOS, request, chain_context)
+    def test_rand_out_of_range_utxo(self, chain_context):
+        request = [TransactionOutput.from_primitive([address, [500000]])]
+
+        with pytest.raises(UTxOSelectionException):
+            RandomImproveMultiAsset(random_generator=[1000, 1000]).select(
+                UTXOS,
+                request,
+                chain_context,
+                include_max_fee=False,
+                respect_min_utxo=True,
+            )
 
     def test_max_input_count(self, chain_context):
         request = [TransactionOutput.from_primitive([address, [15000000]])]
@@ -200,6 +231,7 @@ class TestRandomImproveMultiAsset:
                             * 28: {
                                 bytes(f"token0", encoding="utf-8"): 50,
                                 bytes(f"token3", encoding="utf-8"): 50,
+                                bytes(f"token6", encoding="utf-8"): 0,
                             }
                         },
                     ],
@@ -222,3 +254,7 @@ class TestRandomImproveMultiAsset:
             UTXOS[0],
         ]
         assert_request_fulfilled(request, selected)
+
+    def test_max_input_count_multiasset(self, chain_context):
+        request = [TransactionOutput.from_primitive([address, [15000000]])]
+        self.selector.select(UTXOS, [], chain_context)

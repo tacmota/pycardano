@@ -173,8 +173,8 @@ class RandomImproveMultiAsset(UTxOSelector):
         selected_amount: Value,
     ):
         while not amount <= selected_amount:
-            if not remaining:
-                raise InputUTxODepletedException("Input UTxOs depleted!")
+            # if not remaining:
+            #     raise InputUTxODepletedException("Input UTxOs depleted!")
             i, to_add = self._get_next_random(remaining)
             selected.append(to_add)
             selected_amount += to_add.output.amount
@@ -188,9 +188,6 @@ class RandomImproveMultiAsset(UTxOSelector):
         # Extract native assets
         for policy_id, d in value.multi_asset.items():
             for asset_name, amount in d.items():
-                if not amount:
-                    # skip 0 amounts
-                    continue
                 assets.append(
                     Value.from_primitive(
                         [
@@ -236,10 +233,10 @@ class RandomImproveMultiAsset(UTxOSelector):
             # In case where there is no remaining UTxOs or we already selected more than ideal,
             # we cannot improve by randomly adding more UTxOs, therefore return immediate.
             return
-        if max_input_count is not None and len(selected) > max_input_count:
-            raise MaxInputCountExceededException(
-                f"Max input count: {max_input_count} exceeded!"
-            )
+        # if max_input_count is not None and len(selected) > max_input_count:
+        #     raise MaxInputCountExceededException(
+        #         f"Max input count: {max_input_count} exceeded!"
+        #     )
 
         i, to_add = self._get_next_random(remaining)
         if (

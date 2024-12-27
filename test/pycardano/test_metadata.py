@@ -3,7 +3,8 @@ from test.pycardano.util import check_two_way_cbor
 import pytest
 from cbor2 import CBORTag
 
-from pycardano.exception import InvalidArgumentException
+from pycardano import CBORSerializable
+from pycardano.exception import DeserializeException, InvalidArgumentException
 from pycardano.key import VerificationKey
 from pycardano.metadata import (
     AlonzoMetadata,
@@ -70,6 +71,13 @@ def test_alonzo_metadata():
         )
         == alonzo_m.to_primitive()
     )
+
+
+def test_invalid_attr_metadata():
+    invalid_value = CBORTag(123, "123")
+
+    with pytest.raises(DeserializeException):
+        AlonzoMetadata.from_primitive(invalid_value)
 
 
 def test_auxiliary_data():

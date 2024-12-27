@@ -7,6 +7,7 @@ from mnemonic import Mnemonic
 
 from pycardano import HDWallet, StakeKeyPair, StakeSigningKey, StakeVerificationKey
 from pycardano.exception import InvalidKeyTypeException
+from pycardano.hash import ConstrainedBytes
 from pycardano.key import (
     ExtendedSigningKey,
     ExtendedVerificationKey,
@@ -279,3 +280,7 @@ def test_extended_signing_key_from_hd_wallet_uses_type_and_description_from_clas
     extended_stake_key = StakeExtendedSigningKey.from_hdwallet(hd_wallet)
     assert extended_stake_key.key_type == StakeExtendedSigningKey.KEY_TYPE
     assert extended_stake_key.description == StakeExtendedSigningKey.DESCRIPTION
+
+
+def test_bytes():
+    assert bytes(ConstrainedBytes(b"1234")) != b"1235"
